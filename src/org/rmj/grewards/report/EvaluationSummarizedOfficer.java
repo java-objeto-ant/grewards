@@ -11,14 +11,13 @@ import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
-import org.rmj.grewards.base.LMasDetTrans;
 import org.json.simple.JSONObject;
 
 /**
  *
  * @author Maynard
  */
-public class EvaluationSummarized {
+public class EvaluationSummarizedOfficer {
 
     private final String MASTER_TABLE = "Pacita_Evaluation";
     private final GRider p_oApp;
@@ -30,14 +29,12 @@ public class EvaluationSummarized {
     private boolean p_bWithUI = true;
 
     private CachedRowSet p_oRecord;
-    private CachedRowSet p_oBranch;
     private CachedRowSet p_oBranchArea;
+    private CachedRowSet p_oBranch;
     private CachedRowSet p_oEmployee;
     private CachedRowSet p_oDivision;
 
-    private LMasDetTrans p_oListener;
-
-    public EvaluationSummarized(GRider foApp, String fsBranchCd, boolean fbWithParent) {
+    public EvaluationSummarizedOfficer(GRider foApp, String fsBranchCd, boolean fbWithParent) {
         p_oApp = foApp;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;
@@ -53,10 +50,6 @@ public class EvaluationSummarized {
         p_nTranStat = fnValue;
     }
 
-    public void setListener(LMasDetTrans foValue) {
-        p_oListener = foValue;
-    }
-
     public void setWithUI(boolean fbValue) {
         p_bWithUI = fbValue;
     }
@@ -67,27 +60,6 @@ public class EvaluationSummarized {
 
     public String getMessage() {
         return p_sMessage;
-    }
-
-    public Object getDivision(int fnIndex) throws SQLException {
-        if (fnIndex == 0) {
-            return null;
-        }
-
-        p_oDivision.first();
-        return p_oDivision.getObject(fnIndex);
-    }
-
-    public Object getDivision(String fsIndex) throws SQLException {
-        return getDivision(getColumnIndex(p_oDivision, fsIndex));
-    }
-
-    public void setDivision() {
-        p_oDivision = null;
-    }
-
-    public CachedRowSet getDivision() {
-        return p_oDivision;
     }
 
     private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException {
@@ -138,6 +110,19 @@ public class EvaluationSummarized {
         return p_oBranch.getObject(fnIndex);
     }
 
+    public Object getBranch(String fsIndex) throws SQLException {
+        return getBranch(getColumnIndex(p_oBranch, fsIndex));
+    }
+
+    public Object getBranch() {
+
+        return p_oBranch;
+    }
+
+    public void setBranch() {
+        p_oBranch = null;
+    }
+
     public Object getBranchArea(int fnIndex) throws SQLException {
         if (fnIndex == 0) {
             return null;
@@ -160,17 +145,25 @@ public class EvaluationSummarized {
         p_oBranchArea = null;
     }
 
-    public Object getBranch(String fsIndex) throws SQLException {
-        return getBranch(getColumnIndex(p_oBranch, fsIndex));
+    public Object getDivision(int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+
+        p_oDivision.first();
+        return p_oDivision.getObject(fnIndex);
     }
 
-    public Object getBranch() {
-
-        return p_oBranch;
+    public Object getDivision(String fsIndex) throws SQLException {
+        return getDivision(getColumnIndex(p_oDivision, fsIndex));
     }
 
-    public void setBranch() {
-        p_oBranch = null;
+    public void setDivision() {
+        p_oDivision = null;
+    }
+
+    public CachedRowSet getDivision() {
+        return p_oDivision;
     }
 
     public Object getOfficer(int fnIndex) throws SQLException {
@@ -182,12 +175,13 @@ public class EvaluationSummarized {
         return p_oEmployee.getObject(fnIndex);
     }
 
-    public Object getOfficer(String fsIndex) throws SQLException {
-        return getOfficer(getColumnIndex(p_oEmployee, fsIndex));
+    public Object getOfficer() {
+
+        return p_oEmployee;
     }
 
-    public Object getOfficer() {
-        return p_oEmployee;
+    public Object getOfficer(String fsIndex) throws SQLException {
+        return getOfficer(getColumnIndex(p_oEmployee, fsIndex));
     }
 
     public void setOfficer() {
@@ -257,53 +251,20 @@ public class EvaluationSummarized {
 
     }
 
-    public String getSQ_BranchRecord() throws SQLException {
-        String lsSQL;
-
-        lsSQL = "SELECT "
-                + " '' sTransNox "
-                + " , '' dTransact "
-                + " , '' sCompnyNm "
-                + " , e.sBranchNm sBranchNm "
-                + " , '' sPayloadx "
-                + " , 0.0 nRatingxx "
-                + " , '' sUserIDxx "
-                + " , '' cTranStat "
-                + " , '' sModified "
-                + " , '' dModified "
-                + " , g.sAreaDesc AreaDesc "
-                + " , '' sDeptName "
-                + " , 0.0 xRating "
-                + " , 0 xBranchCount "
-                + " FROM  Branch e "
-                + " LEFT JOIN Branch_Others f "
-                + " ON e.sBranchCd = f.sBranchCd "
-                + " LEFT JOIN Branch_Area g "
-                + " ON f.sAreaCode = g.sAreaCode "
-                + " WHERE f.cDivision IN ('0','1') "
-                + "      AND g.sAreaCode NOT IN ('0013','0017','0024') "
-                + " ORDER BY sBranchNm ";
-
-        if (p_oDivision != null) {
-            lsSQL = MiscUtil.addCondition(lsSQL, " f.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde")));
-        }
-        return lsSQL;
-
-    }
-
     public boolean OpenRecord(String fsDateTo, String fsDateFrom) throws SQLException {
-        String lsSQL;
+
         if (p_oApp == null) {
             p_sMessage = "Application driver is not set.";
             return false;
         }
 //        createDetail();
         p_sMessage = "";
-        String lsSQLRecord = getSQ_Record();
+        String lsSQL = getSQ_Record();
         String lsCondition = "";
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
-
+//        
+//     
         if (!fsDateTo.isEmpty() || !fsDateFrom.isEmpty()) {
             lsCondition = lsCondition + " AND a.dTransact BETWEEN " + SQLUtil.toSQL(fsDateTo) + " AND " + SQLUtil.toSQL(fsDateFrom);
         }
@@ -317,30 +278,9 @@ public class EvaluationSummarized {
             lsCondition = lsCondition + " AND c.sEmployID = " + SQLUtil.toSQL(getOfficer("sEmployID"));
         }
         if (p_oDivision != null) {
-            lsCondition =  lsCondition + " AND f.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde"));
+            lsCondition = lsCondition + " AND f.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde"));
         }
-
-        lsSQLRecord = lsSQLRecord + lsCondition + " GROUP BY a.sBranchCD";
-
-        lsSQL = "SELECT "
-                + " sTransNox"
-                + " ,dTransact"
-                + " ,sCompnyNm"
-                + " ,sBranchNm"
-                + " ,sPayloadx"
-                + " ,nRatingxx"
-                + " ,sUserIDxx"
-                + " ,cTranStat"
-                + " ,sModified"
-                + " ,dModified"
-                + " ,AreaDesc"
-                + " ,sDeptName"
-                + " ,xRating"
-                + " ,SUM(xBranchCount) xBranchCount"
-                + " FROM ((" + lsSQLRecord + ")"
-                + " UNION ALL "
-                + " (" + getSQ_BranchRecord() + ")) PacitaSummary"
-                + " GROUP BY sBranchNm ORDER BY xRating,sBranchNm DESC";
+        lsSQL = lsSQL + lsCondition + " GROUP BY a.sBranchCD, c.sEmployID ORDER BY xRating DESC";
 
         System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
@@ -356,7 +296,7 @@ public class EvaluationSummarized {
         String lsSQL = "";
 
         lsSQL = " SELECT sAreaCode "
-                + " , sAreaDesc "
+                + " , sAreaDesc sAreaDesc "
                 + " FROM Branch_Area "
                 + " WHERE cRecdStat = '1' ";
 
@@ -709,4 +649,5 @@ public class EvaluationSummarized {
 
         return lsSQL;
     }
+
 }

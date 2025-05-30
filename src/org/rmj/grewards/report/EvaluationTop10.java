@@ -37,6 +37,7 @@ public class EvaluationTop10 {
     private CachedRowSet p_oBranchArea;
     private CachedRowSet p_oBranch;
     private CachedRowSet p_oEmployee;
+    private CachedRowSet p_oDivision;
 
     public EvaluationTop10(GRider foApp, String fsBranchCd, boolean fbWithParent) {
         p_oApp = foApp;
@@ -149,6 +150,27 @@ public class EvaluationTop10 {
         p_oBranchArea = null;
     }
 
+    public Object getDivision(int fnIndex) throws SQLException {
+        if (fnIndex == 0) {
+            return null;
+        }
+
+        p_oDivision.first();
+        return p_oDivision.getObject(fnIndex);
+    }
+
+    public Object getDivision(String fsIndex) throws SQLException {
+        return getDivision(getColumnIndex(p_oDivision, fsIndex));
+    }
+
+    public void setDivision() {
+        p_oDivision = null;
+    }
+
+    public CachedRowSet getDivision() {
+        return p_oDivision;
+    }
+
     public Object getOfficer(int fnIndex) throws SQLException {
         if (fnIndex == 0) {
             return null;
@@ -259,6 +281,9 @@ public class EvaluationTop10 {
         }
         if (p_oEmployee != null) {
             lsCondition = lsCondition + " AND c.sEmployID = " + SQLUtil.toSQL(getOfficer("sEmployID"));
+        }
+        if (p_oDivision != null) {
+            lsCondition = lsCondition + " AND f.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde"));
         }
         lsSQL = lsSQL + lsCondition + " GROUP BY a.sBranchCD ORDER BY xRating DESC LIMIT 10";
 
@@ -541,4 +566,93 @@ public class EvaluationTop10 {
 
         return OpenOfficer(lsSQL);
     }
+
+    public boolean searchDivision(String fsValue, boolean fbByCode) throws SQLException {
+
+        String lsSQL = getSQ_Division();
+        if (fbByCode) {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sDivsnCde = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sDivsnDsc LIKE " + SQLUtil.toSQL(fsValue + "%"));
+        }
+
+        JSONObject loJSON;
+
+        if (p_bWithUI) {
+            loJSON = showFXDialog.jsonSearch(
+                    p_oApp,
+                    lsSQL,
+                    fsValue,
+                    "Code»Division Name",
+                    "sDivsnCde»sDivsnDsc",
+                    "sDivsnCde»sDivsnDsc",
+                    fbByCode ? 0 : 1);
+
+            if (loJSON != null) {
+                return OpenDivision((String) loJSON.get("sDivsnCde"));
+            } else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+
+        if (fbByCode) {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sDivsnCde = " + SQLUtil.toSQL(fsValue));
+        } else {
+            lsSQL = MiscUtil.addCondition(lsSQL, "sDivsnDsc LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            lsSQL += " LIMIT 1";
+        }
+
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+
+        if (!loRS.next()) {
+            MiscUtil.close(loRS);
+            p_sMessage = "No Division found for the given criteria.";
+            return false;
+        }
+
+        String lsCode = loRS.getString("sDivsnCde");
+        MiscUtil.close(loRS);
+
+        return OpenDivision(lsCode);
+    }
+
+    public boolean OpenDivision(String fsDivision) throws SQLException {
+        p_nEditMode = EditMode.UNKNOWN;
+
+        if (p_oApp == null) {
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+
+        p_sMessage = "";
+
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+
+        //open master
+        lsSQL = MiscUtil.addCondition(getSQ_Division(), "sDivsnCde = " + SQLUtil.toSQL(fsDivision));
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oDivision = factory.createCachedRowSet();
+        p_oDivision.populate(loRS);
+        MiscUtil.close(loRS);
+
+        p_nEditMode = EditMode.READY;
+
+        return true;
+    }
+
+    public String getSQ_Division() {
+        String lsSQL = "";
+
+        lsSQL = "SELECT"
+                + "  sDivsnCde "
+                + " , sDivsnDsc sDivsnDsc"
+                + " FROM Division "
+                + " WHERE cRecdStat = 1";
+
+        return lsSQL;
+    }
+
 }
