@@ -212,8 +212,9 @@ public class EvaluationSummarizedOfficer {
         System.out.println("----------------------------------------");
     }
 
-    public String getSQ_Record() {
+    public String getSQ_Record(String fsDateFrom, String fsDateThru) throws SQLException {
         String lsSQL;
+        String lsCondition = "";
 
         lsSQL = "SELECT "
                 + " a.sTransNox sTransNox "
@@ -230,6 +231,7 @@ public class EvaluationSummarizedOfficer {
                 + ", h.sDeptName sDeptName "
                 + ", AVG(a.nRatingxx) xRating "
                 + ", COUNT(a.sBranchCD) xBranchCount "
+                + ", IFNULL(subTable.nTotalAverage,0) xTotalAverage "
                 + " FROM " + MASTER_TABLE + " a "
                 + " LEFT JOIN App_User_Master b "
                 + " ON a.sUserIDxx = b.sUserIDxx "
@@ -245,28 +247,12 @@ public class EvaluationSummarizedOfficer {
                 + " ON f.sAreaCode = g.sAreaCode "
                 + " LEFT JOIN Department h "
                 + " ON c.sDeptIDxx = h.sDeptIDxx "
+                + " LEFT JOIN (" + getSQ_RecordSub(fsDateFrom, fsDateThru)+ ") subTable "
+                + " ON a.sBranchCD = subTable.sBranchCD "
                 + " WHERE (c.sDeptIDxx IN ('021', '026', '034') OR c.sEmpLevID = '4') ";
 
-        return lsSQL;
-
-    }
-
-    public boolean OpenRecord(String fsDateTo, String fsDateFrom) throws SQLException {
-
-        if (p_oApp == null) {
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-//        createDetail();
-        p_sMessage = "";
-        String lsSQL = getSQ_Record();
-        String lsCondition = "";
-        ResultSet loRS;
-        RowSetFactory factory = RowSetProvider.newFactory();
-//        
-//     
-        if (!fsDateTo.isEmpty() || !fsDateFrom.isEmpty()) {
-            lsCondition = lsCondition + " AND a.dTransact BETWEEN " + SQLUtil.toSQL(fsDateTo) + " AND " + SQLUtil.toSQL(fsDateFrom);
+        if (!fsDateThru.isEmpty() || !fsDateFrom.isEmpty()) {
+            lsCondition = lsCondition + " AND a.dTransact BETWEEN " + SQLUtil.toSQL(fsDateFrom) + " AND " + SQLUtil.toSQL(fsDateThru);
         }
         if (p_oBranchArea != null) {
             lsCondition = lsCondition + " AND g.sAreaCode = " + SQLUtil.toSQL(getBranchArea("sAreaCode"));
@@ -280,7 +266,61 @@ public class EvaluationSummarizedOfficer {
         if (p_oDivision != null) {
             lsCondition = lsCondition + " AND f.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde"));
         }
-        lsSQL = lsSQL + lsCondition + " GROUP BY a.sBranchCD, c.sEmployID ORDER BY xRating DESC";
+        lsSQL = lsSQL + lsCondition + " GROUP BY a.sBranchCD, c.sEmployID ORDER BY a.sBranchCD DESC";
+
+        return lsSQL;
+
+    }
+
+    public String getSQ_RecordSub(String fsDateFrom, String fsDateThru) throws SQLException {
+        String lsSQL;
+        String lsCondition = "";
+
+        lsSQL = "SELECT "
+                + " a.sBranchCD "
+                + " , AVG(a.nRatingxx) nTotalAverage "
+                + " FROM " + MASTER_TABLE + " a "
+                + " LEFT JOIN App_User_Master b "
+                + " ON a.sUserIDxx = b.sUserIDxx "
+                + " LEFT JOIN Employee_Master001 c "
+                + " ON b.sEmployNo = c.sEmployID "
+                + " LEFT JOIN Branch_Others f "
+                + " ON a.sBranchCd = f.sBranchCd "
+                + " LEFT JOIN Branch_Area g "
+                + " ON f.sAreaCode = g.sAreaCode "
+                + " WHERE (c.sDeptIDxx IN ('021', '026', '034') OR c.sEmpLevID = '4') ";
+
+        if (!fsDateThru.isEmpty() || !fsDateFrom.isEmpty()) {
+            lsCondition = lsCondition + " AND a.dTransact BETWEEN " + SQLUtil.toSQL(fsDateFrom) + " AND " + SQLUtil.toSQL(fsDateThru);
+        }
+        if (p_oBranchArea != null) {
+            lsCondition = lsCondition + " AND g.sAreaCode = " + SQLUtil.toSQL(getBranchArea("sAreaCode"));
+        }
+        if (p_oBranch != null) {
+            lsCondition = lsCondition + " AND a.sBranchCD = " + SQLUtil.toSQL(getBranch("sBranchCd"));
+        }
+        if (p_oEmployee != null) {
+            lsCondition = lsCondition + " AND c.sEmployID = " + SQLUtil.toSQL(getOfficer("sEmployID"));
+        }
+        if (p_oDivision != null) {
+            lsCondition = lsCondition + " AND f.cDivision = " + SQLUtil.toSQL(getDivision("sDivsnCde"));
+        }
+        lsSQL = lsSQL + lsCondition + " GROUP BY a.sBranchCD";
+
+        return lsSQL;
+
+    }
+
+    public boolean OpenRecord(String fsDateTo, String fsDateThru) throws SQLException {
+
+        if (p_oApp == null) {
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        p_sMessage = "";
+        String lsSQL = getSQ_Record(fsDateTo, fsDateThru);
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
 
         System.out.println(lsSQL);
         loRS = p_oApp.executeQuery(lsSQL);
