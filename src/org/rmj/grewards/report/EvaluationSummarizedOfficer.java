@@ -12,6 +12,7 @@ import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
 import org.json.simple.JSONObject;
+import org.rmj.appdriver.constants.RecordStatus;
 
 /**
  *
@@ -249,7 +250,8 @@ public class EvaluationSummarizedOfficer {
                 + " ON c.sDeptIDxx = h.sDeptIDxx "
                 + " LEFT JOIN (" + getSQ_RecordSub(fsDateFrom, fsDateThru)+ ") subTable "
                 + " ON a.sBranchCD = subTable.sBranchCD "
-                + " WHERE (c.sDeptIDxx IN ('021', '026', '034') OR c.sEmpLevID = '4') ";
+                + " WHERE (c.sDeptIDxx IN ('021', '026', '034') OR c.sEmpLevID = '4') "
+                + " AND e.cRecdStat =  " + SQLUtil.toSQL(RecordStatus.ACTIVE);
 
         if (!fsDateThru.isEmpty() || !fsDateFrom.isEmpty()) {
             lsCondition = lsCondition + " AND a.dTransact BETWEEN " + SQLUtil.toSQL(fsDateFrom) + " AND " + SQLUtil.toSQL(fsDateThru);

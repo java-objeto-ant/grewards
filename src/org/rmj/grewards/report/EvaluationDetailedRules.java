@@ -12,6 +12,7 @@ import org.rmj.appdriver.SQLUtil;
 import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
 import org.json.simple.JSONObject;
+import org.rmj.appdriver.constants.RecordStatus;
 
 /**
  *
@@ -264,7 +265,8 @@ public class EvaluationDetailedRules {
                 + " ON f.sAreaCode = g.sAreaCode "
                 + " LEFT JOIN Department h "
                 + " ON c.sDeptIDxx = h.sDeptIDxx "
-                + " WHERE (c.sDeptIDxx IN ('021', '026', '034') OR c.sEmpLevID = '4') ";
+                + " WHERE (c.sDeptIDxx IN ('021', '026', '034') OR c.sEmpLevID = '4') "
+                + " AND e.cRecdStat =  " + SQLUtil.toSQL(RecordStatus.ACTIVE);
 
         return lsSQL;
 
